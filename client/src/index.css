@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+*::-webkit-scrollbar {
+  width: 2.5px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: white;
+  border-radius: 5px;
+}
+
+*::-webkit-scrollbar:horizontal {
+  height: 2px;
+}
+
+/* .grad-text {
+  background: linear-gradient(135deg, rgb(255, 78, 249), rgb(109, 0, 167));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+} */
+
+.input-container::-webkit-scrollbar {
+  width: 7.5px;
+}
+
+.input-container::-webkit-scrollbar-thumb {
+  background: white;
+  border-radius: 2.5px;
+}
+
+.chat-block {
+  h1,
+  h2,
+  h3 {
+    margin-block: 1.25rem;
+  }
+  h4,
+  h5,
+  h6 {
+    margin-block: 0.75rem;
+  }
+  pre {
+    overflow-x: auto;
+  }
+  ul {
+    margin-block: 1rem;
+    li {
+      margin-block: 0.5rem;
+    }
+  }
+}
+
+p:has(strong) {
+  margin-block: 1rem;
+}
+
+.cursor {
+  animation: writer 750ms infinite;
+}
+
+@keyframes writer {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (width < 550px) {
+  .logos-container {
+    display: flex;
+    flex-direction: column;
+  }
+  .logos {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@media (width < 600px) {
+  .auth-img {
+    display: none;
+  }
+}
+
+@media (width > 1000px) {
+  .main {
+    border-left-width: 1px;
+    border-right-width: 1px;
+  }
+}

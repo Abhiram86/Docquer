@@ -13,6 +13,10 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 # from langchain.embeddings import HuggingFaceEmbeddings
 from sentence_transformers import SentenceTransformer
 from pineconedb import pc, spec
+from fastapi import HTTPException
+
+embeddings_model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+
 
 def normal_chat_main_content(name: str) -> str:
     return f"""
@@ -114,24 +118,29 @@ def split_into_chunks(data: str) -> List[str]:
     texts = text_splitter.split_text(data)
     return texts
 
-def get_index(conv_id: str):
+def get_index(conv_id: str) -> Index:
     index_name = f"docquer-{conv_id}"
     index = pc.Index(index_name)
     return index
 
-async def init_vector_db(chunks: List[str], conv_id: str) -> Index:
+def insert_data(conv_id: str, data: List[str]):
+    index = get_index(conv_id)
+    embeddings = embeddings_model.encode(data)
+    data = [{
+        "id": str(uuid.uuid4()),
+        "values": embedding.tolist(),
+        "metadata": {"text": data[i]}
+    } for i, embedding in enumerate(embeddings)]
+    index.upsert(vectors=data)
+
+def init_vector_db(chunks: List[str], conv_id: str) -> Index:
     index_name = f"docquer-{conv_id}"
-    if index_name not in pc.list_indexes():
-        pc.create_index(index_name, dimension=384, metric='cosine', spec=spec)
+    try:
+        if index_name not in pc.list_indexes():
+            pc.create_index(index_name, dimension=384, metric='cosine', spec=spec)
         index = pc.Index(index_name)
-        embeddings_model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-        embeddings = embeddings_model.encode(chunks)
-        data = [{
-            "id": str(uuid.uuid4()),
-            "values": embedding.tolist(),
-            "metadata": {"text": chunks[i]}
-        } for i, embedding in enumerate(embeddings)]
-        index.upsert(vectors=data)
-    else:
-        index = pc.Index(index_name)
-    return index
+        insert_data(conv_id, chunks)
+        return index
+    except Exception as e:
+        print(f"Error initializing vector DB: {e}")
+        raise HTTPException(status_code=500, detail=f"Error initializing vector DB: {str(e)}")

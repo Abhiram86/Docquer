@@ -77,7 +77,7 @@ export function Input({
   name: string;
   className?: string;
   placeholder?: string;
-  InputType?: "text" | "email" | "password" | "number";
+  InputType?: "text" | "email" | "password" | "number" | "url";
   inputRef: MutableRefObject<HTMLInputElement | null>;
   defaultValue?: string;
 }) {

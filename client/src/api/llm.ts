@@ -16,10 +16,11 @@ export const chat_with_llama = async (
   // api_key: string,
   query: string,
   fileMime: string,
+  linkUploaded: boolean,
   lastNMessages: string[] = [],
   conv_id: string
 ) => {
-  if (fileMime.length > 0) {
+  if (fileMime.length > 0 || linkUploaded) {
     try {
       const response = await axios.post(`${BASE_URL}/file-chat`, {
         username,
@@ -183,6 +184,30 @@ export const uploadLinkData = async (url: string, conv_id: string) => {
     return response;
   } catch (error) {
     console.error('Error uploading link data:', error);
+    throw error;
+  }
+};
+
+export const uploadYoutubeVideo = async (conv_id: string, videoUrl: string) => {
+  const formData = new FormData();
+  formData.append("video_url", videoUrl);
+  formData.append("conv_id", conv_id);
+  
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/upload-youtube`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response;
+  } catch (error: any) {
+    if (error.response) {
+      return error.response;
+    }
     throw error;
   }
 };

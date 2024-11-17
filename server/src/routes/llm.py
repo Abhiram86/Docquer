@@ -4,7 +4,7 @@ from db import MongoDB
 from models.User import UpdateGroq
 from models.Chat import NormalChat, NewChat, GetConvos, GetMessages, FileChat, GetConvDetails, DeleteConversatoin
 from bson import ObjectId
-from llm.model import normal_chat, title_recommender, subtitle_recommender, file_chat, create_index, replace_index, delete_index, upload_link_data
+from llm.model import normal_chat, title_recommender, subtitle_recommender, file_chat, create_index, replace_index, delete_index, upload_link_data, get_youtube_transcript, update_index
 from datetime import datetime
 from pydantic import BaseModel
 from typing import List
@@ -92,7 +92,7 @@ async def chat_with_file(req: FileChat):
     messages = await db.find_by_ids("Message", req.messageIds)
     user = await db.find("users", {'username': req.username})
 
-    res = file_chat(user[0]['groq_api_key'], req.username, req.query, req.conv_id, messages)
+    res = await file_chat(user[0]['groq_api_key'], req.username, req.query, req.conv_id, messages)
     if res.get('error'):
         return JSONResponse(content={"error": res['error']}, status_code=400)
     res = res['message']
@@ -157,12 +157,15 @@ async def get_messages(req: GetMessages):
     api_status = True if len(user[0]['groq_api_key']) > 0 else False
     if len(conv) > 0:
         msgs = await db.find_by_ids("Message", conv[0]['messages'])
+        linkUploaded = False
+        if conv[0].get('links'):
+            linkUploaded = True if len(conv[0]['links']) > 0 else False
         if conv[0]["fileName"]:
             return {"messages": msgs, "file": {
                 "fileName": conv[0]["fileName"],
                 "fileMime": conv[0]["fileMime"]
-            }, "api_key": api_status}
-        return {"messages": msgs, "file": None, "api_status": api_status}
+            }, "api_status": api_status, "linkUploaded": linkUploaded}
+        return {"messages": msgs, "file": None, "api_status": api_status, "linkUploaded": linkUploaded}
     else:
         return JSONResponse(content={"error": "Not found"}, status_code=404)
     
@@ -192,6 +195,53 @@ async def deleteConv(req: DeleteConversatoin):
         print(str(e))
         return JSONResponse(content={"error": "Something went wrong"}, status_code=400)
 
+@router.post("/upload-youtube")
+async def upload_youtube_video(video_url: str = Form(...), conv_id: str = Form(...)):
+    try:
+        print(f"Received request to process YouTube video: {video_url}")
+        
+        # Get transcript
+        transcript_result = get_youtube_transcript(video_url)
+        
+        if "error" in transcript_result:
+            return JSONResponse(
+                content={"error": transcript_result["error"]},
+                status_code=400
+            )
+            
+        if not transcript_result.get("success"):
+            return JSONResponse(
+                content={"error": "Failed to process video transcript"},
+                status_code=400
+            )
+            
+        update_index(file=None, fileType=None, text=transcript_result["transcript"], conv_id=conv_id)
+        
+        # Update conversation with video info
+        await db.update("convos", 
+            {"_id": ObjectId(conv_id)}, 
+            {"$push": {
+                "links": {
+                    "linkName": f"YouTube Video - {transcript_result['video_id']}",
+                    "linkUrl": video_url,
+                    "linkType": "youtube_transcript"
+                }
+            }}
+        )
+        
+        return {
+            "message": "success",
+            "video_id": transcript_result["video_id"],
+            "transcript_length": len(transcript_result["transcript"])
+        }
+        
+    except Exception as e:
+        print(f"Error in upload_youtube_video: {str(e)}")
+        return JSONResponse(
+            content={"error": f"Error processing YouTube video: {str(e)}"},
+            status_code=400
+        )
+
 class UploadLinkData(BaseModel):
     conv_id: str
     url: str
@@ -202,3 +252,7 @@ async def upload_link(req: UploadLinkData):
     if res.get('error'):
         return JSONResponse(content={"error": res['error']}, status_code=400)
     return JSONResponse(content=res, status_code=200)
+
+class UploadLinkData(BaseModel):
+    conv_id: str
+    url: str

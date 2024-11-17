@@ -1,13 +1,17 @@
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
-from .constants import normal_chat_main_content, normal_chat_editor, getFileText, split_into_chunks, init_vector_db, get_index
+from .constants import normal_chat_main_content, normal_chat_editor, getFileText, split_into_chunks, init_vector_db, get_index, insert_data
 from typing import TypedDict, List
 from sentence_transformers import SentenceTransformer
 from fastapi import HTTPException
-from pineconedb import pc
+from pineconedb import pc, spec
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.formatters import TextFormatter
+from youtube_transcript_api._errors import NoTranscriptFound, TranscriptsDisabled
+from typing import Optional
 
 class MessageDict(TypedDict):
     _id: str
@@ -63,10 +67,10 @@ def subtitle_recommender(key: str, title: str, query: str):
     
     return msg.content
 
-async def create_index(file: bytes, fileType: str, conv_id: str):
+def create_index(file: bytes, fileType: str, conv_id: str):
     file_string = getFileText(file, fileType)
     chunks = split_into_chunks(file_string)
-    await init_vector_db(chunks, conv_id)
+    init_vector_db(chunks, conv_id)
 
 def delete_index(conv_id: str):
     print(pc.list_indexes())
@@ -76,7 +80,7 @@ def delete_index(conv_id: str):
     else:
         print(f"no index found with name {index_name}")
         
-async def replace_index(file: bytes, fileType: str, conv_id: str):
+def replace_index(file: bytes, fileType: str, conv_id: str):
     index_name = f"docquer-{conv_id}"
     if index_name in pc.list_indexes():
         try:
@@ -86,9 +90,31 @@ async def replace_index(file: bytes, fileType: str, conv_id: str):
             raise HTTPException(status_code=500, detail="Error deleting existing index")
     file_string = getFileText(file, fileType)
     chunks = split_into_chunks(file_string)
-    await init_vector_db(chunks, conv_id)
+    init_vector_db(chunks, conv_id)
 
-def file_chat(api_key: str, username, query: str, conv_id: str, prevMessages):
+def update_index(file: Optional[bytes], fileType: Optional[str], text: Optional[str], conv_id: str):
+    if not file and not text:
+        raise HTTPException(status_code=400, detail="Please provide either file or text")
+    
+    index_name = f"docquer-{conv_id}"
+    try:
+        # Try to get existing index or create new one
+        if index_name not in pc.list_indexes():
+            pc.create_index(index_name, dimension=384, metric='cosine', spec=spec)
+        
+        if file:
+            file_string = getFileText(file, fileType)
+            chunks = split_into_chunks(file_string)
+            insert_data(conv_id, chunks)
+        elif text:
+            chunks = split_into_chunks(text)
+            insert_data(conv_id, chunks)
+            
+    except Exception as e:
+        print(f"Error in update_index: {e}")
+        raise HTTPException(status_code=500, detail=f"Error updating index: {str(e)}")
+
+async def file_chat(api_key: str, username, query: str, conv_id: str, prevMessages):
     index = get_index(conv_id)
     try:
         model = ChatGroq(
@@ -183,3 +209,85 @@ def upload_link_data(url: str, conv_id: str):
             
     except Exception as e:
         return {"error": f"Unexpected error: {str(e)}"}
+
+def extract_video_id(url: str) -> str:
+    """Extract video ID from different YouTube URL formats"""
+    try:
+        # Try parsing the URL
+        parsed_url = urlparse(url)
+        
+        # Clean up the URL parameters
+        path = parsed_url.path.rstrip('/')
+        
+        # youtu.be format
+        if parsed_url.netloc == 'youtu.be':
+            # Remove any query parameters and get the ID
+            video_id = path.split('/')[-1].split('?')[0]
+            return video_id
+        
+        # youtube.com format
+        if parsed_url.netloc in ['www.youtube.com', 'youtube.com']:
+            if parsed_url.path == '/watch':
+                # Standard format: youtube.com/watch?v=...
+                query = parse_qs(parsed_url.query)
+                if 'v' in query:
+                    return query['v'][0]
+            elif path.startswith('/v/'):
+                # Embed format: youtube.com/v/...
+                return path.split('/')[2]
+            elif path.startswith('/embed/'):
+                # Embed format: youtube.com/embed/...
+                return path.split('/')[2]
+        
+        raise ValueError("Could not extract video ID from URL")
+    except Exception as e:
+        print(f"Error extracting video ID: {str(e)}")
+        raise ValueError(f"Invalid YouTube URL format: {str(e)}")
+
+def get_youtube_transcript(video_url: str) -> dict:
+    """
+    Get transcript from YouTube video URL and format it as text.
+    Returns a dictionary with success/error status and transcript/error message.
+    """
+    try:
+        print(f"Processing YouTube URL: {video_url}")
+        
+        # Extract video ID from URL
+        video_id = extract_video_id(video_url)
+        print(f"Extracted video ID: {video_id}")
+        
+        # Get transcript
+        try:
+            transcript = YouTubeTranscriptApi.get_transcript(video_id)
+            print(f"Successfully fetched transcript for video {video_id}")
+        except NoTranscriptFound:
+            print(f"No transcript found for video {video_id}")
+            return {"error": "No transcript found for this video"}
+        except TranscriptsDisabled:
+            print(f"Transcripts are disabled for video {video_id}")
+            return {"error": "Transcripts are disabled for this video"}
+        except Exception as e:
+            print(f"Error getting transcript: {str(e)}")
+            return {"error": f"Error getting transcript: {str(e)}"}
+        
+        # Format transcript to plain text
+        formatter = TextFormatter()
+        text_transcript = formatter.format_transcript(transcript)
+        print(f"Formatted transcript length: {len(text_transcript)}")
+        
+        return {
+            "success": True,
+            "transcript": text_transcript,
+            "video_id": video_id
+        }
+        
+    except ValueError as e:
+        print(f"URL parsing error: {str(e)}")
+        return {
+            "error": str(e)
+        }
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        return {
+            "error": f"Error processing video: {str(e)}"
+        }

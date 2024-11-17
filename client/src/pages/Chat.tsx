@@ -14,6 +14,7 @@ import {
   update_api_key,
   uploadFile,
   uploadLinkData,
+  uploadYoutubeVideo,
 } from "../api/llm";
 import { MDRender } from "../components/MDRender";
 import { FixedSizeArray } from "../constants/chatHistory";
@@ -32,6 +33,7 @@ export default function Chat() {
   const [file, setFile] = useState({
     fileName: "",
     fileMime: "",
+    linkUploaded: false,
   });
   const [focus, setFocus] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -92,7 +94,7 @@ export default function Chat() {
           );
           if (res.status === 200) {
             setDoc((prev) => [...(prev || []), ...files]);
-            setFile({ fileName: files[0].name, fileMime: files[0].type });
+            setFile({ fileName: files[0].name, fileMime: files[0].type, linkUploaded: false });
             toast.success("Successfully uploaded", {
               duration: 2000,
               style: {
@@ -124,7 +126,7 @@ export default function Chat() {
         const res = await uploadFile(convId, files[0]);
         if (res.status === 200) {
           setDoc([...files]);
-          setFile({ fileName: files[0].name, fileMime: files[0].type });
+          setFile({ fileName: files[0].name, fileMime: files[0].type, linkUploaded: false });
           console.log(files);
         }
       }
@@ -140,7 +142,7 @@ export default function Chat() {
       const res = await reuploadFile(convId, files[0]);
       if (res.status === 200) {
         setDoc([...files]);
-        setFile({ fileName: files[0].name, fileMime: files[0].type });
+        setFile({ fileName: files[0].name, fileMime: files[0].type, linkUploaded: false });
         toast.success("Successfully re-uploaded", {
           duration: 2000,
           style: {
@@ -205,6 +207,7 @@ export default function Chat() {
         // user.groq_api_key,
         query,
         file.fileMime,
+        file.linkUploaded,
         chatHistory.getItems(),
         convId
       );
@@ -335,9 +338,11 @@ export default function Chat() {
   };
 
   const handleLink = async () => {
-    if (LinkRef.current && user) {
+    setIsLinkSelected(false);
+    if (LinkRef.current && user && convId !== "new") {
       console.log(user._id);
-      const res = await uploadLinkData(user._id, LinkRef.current.value);
+      setLoading(true);
+      const res = await uploadYoutubeVideo(convId, LinkRef.current.value);
       if (res.status === 200) {
         toast.success("Successfully uploaded", {
           duration: 2000,
@@ -351,7 +356,6 @@ export default function Chat() {
             secondary: "white",
           },
         });
-        setIsLinkSelected(false);
       } else {
         toast.error("Something went wrong check api key", {
           duration: 2000,
@@ -366,6 +370,27 @@ export default function Chat() {
           },
         });
       }
+      setLoading(false);
+    } else if (convId === "new" && LinkRef.current && user) {
+      const res2 = await new_chat(
+        user.username,
+        null,
+        LinkRef.current.value
+        // user.groq_api_key
+      );
+      if (res2.status === 200) {
+        setUser({ ...user, convos: [...user.convos, res2.data.id] });
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            ...user,
+            convos: [...user.convos, res2.data.id],
+          })
+        );
+        setConvId(res2.data.id);
+        window.history.replaceState(null, "", `/chat/${res2.data.id}`);
+        await sendMessage(LinkRef.current.value, res2.data.id);
+      }
     }
   };
 
@@ -378,11 +403,12 @@ export default function Chat() {
 
           if (res.status === 200) {
             setMessages(res.data.messages);
-            setApiStatus(res.data.api_key);
+            setApiStatus(res.data.api_status);
             if (res.data.file) {
               setFile(res.data.file);
               setDoc([res.data.file]);
             }
+            setFile(prev => ({...prev, linkUploaded: res.data.linkUploaded}));
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             chatHistory.addLastN(res.data.messages.map((m: any) => m._id));
           }
@@ -441,6 +467,7 @@ export default function Chat() {
           <Input
             placeholder="Enter the link"
             name="page-link"
+            InputType="url"
             inputRef={LinkRef}
           />
           <div className="flex flex-row gap-2">
@@ -556,7 +583,7 @@ export default function Chat() {
         ))}
       </div>
       <div
-        className="flex flex-row gap-2 w-[calc(100%-2rem)] max-w-[52rem] 
+        className="flex flex-row gap-2 w-[calc(100%-2rem)] max-w-[55rem] 
       justify-center items-center fixed bottom-20 left-1/2 -translate-x-1/2"
       >
         {!focus &&

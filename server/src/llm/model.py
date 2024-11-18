@@ -98,23 +98,44 @@ def update_index(file: Optional[bytes], fileType: Optional[str], text: Optional[
     
     index_name = f"docquer-{conv_id}"
     try:
-        # Try to get existing index or create new one
-        if index_name not in pc.list_indexes():
-            pc.create_index(index_name, dimension=384, metric='cosine', spec=spec)
-        
+        chunks = []
         if file:
             file_string = getFileText(file, fileType)
             chunks = split_into_chunks(file_string)
-            insert_data(conv_id, chunks)
         elif text:
             chunks = split_into_chunks(text)
-            insert_data(conv_id, chunks)
+
+        # Try to get existing index first
+        try:
+            index = pc.Index(index_name)
+            # Check if index is actually ready
+            index.describe_index_stats()
+            # If we get here, index exists and is ready - append data
+            insert_data(conv_id, chunks, replace=False)
+        except Exception as e:
+            if "not found" in str(e) or "does not exist" in str(e):
+                # Index truly doesn't exist, create it
+                pc.create_index(index_name, dimension=384, metric='cosine', spec=spec)
+                insert_data(conv_id, chunks, replace=True)
+            else:
+                # Some other error occurred
+                raise e
             
     except Exception as e:
         print(f"Error in update_index: {e}")
-        raise HTTPException(status_code=500, detail=f"Error updating index: {str(e)}")
+        if "not found" in str(e):
+            raise HTTPException(status_code=404, detail="Index not found")
+        if "already exists" in str(e):
+            # If index already exists but we couldn't access it earlier,
+            # it might have been in the process of being created
+            try:
+                insert_data(conv_id, chunks, replace=False)
+            except Exception as inner_e:
+                raise HTTPException(status_code=500, detail=f"Error updating index: {str(inner_e)}")
+        else:
+            raise HTTPException(status_code=500, detail=f"Error updating index: {str(e)}")
 
-async def file_chat(api_key: str, username, query: str, conv_id: str, prevMessages):
+def file_chat(api_key: str, username, query: str, conv_id: str, prevMessages):
     index = get_index(conv_id)
     try:
         model = ChatGroq(
@@ -268,7 +289,7 @@ def get_youtube_transcript(video_url: str) -> dict:
             return {"error": "Transcripts are disabled for this video"}
         except Exception as e:
             print(f"Error getting transcript: {str(e)}")
-            return {"error": f"Error getting transcript: {str(e)}"}
+            return {"error": f"Error getting transcript"}
         
         # Format transcript to plain text
         formatter = TextFormatter()

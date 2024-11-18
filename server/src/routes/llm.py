@@ -61,7 +61,7 @@ async def normal(req: NormalChat):
 async def upload(file: UploadFile = File(...), conv_id: str = Form(...)):
     try:
         file_cont = await file.read()
-        await create_index(file_cont, file.content_type, conv_id)
+        create_index(file_cont, file.content_type, conv_id)
 
         await db.update("convos", {"_id": ObjectId(conv_id)}, {"$set": {"fileName": file.filename, "fileMime": file.content_type}})
         return {"message": "success"}
@@ -73,7 +73,7 @@ async def upload(file: UploadFile = File(...), conv_id: str = Form(...)):
 async def replace_file(file: UploadFile = File(...), conv_id: str = Form(...)):
     try:
         file_cont = await file.read()
-        await replace_index(file_cont, file.content_type, conv_id)
+        replace_index(file_cont, file.content_type, conv_id)
 
         await db.update("convos", {"_id": ObjectId(conv_id)}, {
             "$set": {
@@ -92,7 +92,7 @@ async def chat_with_file(req: FileChat):
     messages = await db.find_by_ids("Message", req.messageIds)
     user = await db.find("users", {'username': req.username})
 
-    res = await file_chat(user[0]['groq_api_key'], req.username, req.query, req.conv_id, messages)
+    res = file_chat(user[0]['groq_api_key'], req.username, req.query, req.conv_id, messages)
     if res.get('error'):
         return JSONResponse(content={"error": res['error']}, status_code=400)
     res = res['message']

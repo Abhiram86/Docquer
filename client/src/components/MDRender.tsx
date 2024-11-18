@@ -1,6 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { okaidia } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { coldarkDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import toast from "react-hot-toast";
 
 export const MDRender = ({ mdString }: { mdString: string }) => {
@@ -38,7 +38,7 @@ export const MDRender = ({ mdString }: { mdString: string }) => {
               <div className="relative">
                 <SyntaxHighlighter
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  style={okaidia as any}
+                  style={coldarkDark as any}
                   language={language}
                   PreTag="div"
                   {...props}

@@ -29,7 +29,6 @@ type Message = {
 export default function Chat() {
   const { id } = useParams();
 
-  const [doc, setDoc] = useState<File[] | null>(null);
   const [file, setFile] = useState({
     fileName: "",
     fileMime: "",
@@ -71,6 +70,64 @@ export default function Chat() {
   const apiKeyRef = useRef<HTMLInputElement | null>(null);
   const LinkRef = useRef<HTMLInputElement | null>(null);
 
+  const updateUserAndLocalStorage = (newConvId: string) => {
+    if (!user) return;
+    const updatedUser = {
+      ...user,
+      convos: [...user.convos, newConvId],
+    };
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
+
+  const handleNewChat = async (content: string) => {
+    if (!user) return;
+    const res = await new_chat(
+      user.username,
+      null,
+      content
+    );
+    if (res.status === 200) {
+      updateUserAndLocalStorage(res.data.id);
+      setConvId(res.data.id);
+      window.history.replaceState(null, "", `/chat/${res.data.id}`);
+      await sendMessage(content, res.data.id);
+    }
+  };
+
+  const handleUploadSuccess = () => {
+    toast.success(
+      "Successfully uploaded",
+      {
+        duration: 3000,
+        style: {
+          backgroundColor: "rgb(63 63 70)",
+          color: "white",
+          border: "2px solid rgb(82 82 91)",
+        },
+        iconTheme: {
+          primary: "green",
+          secondary: "white",
+        },
+      }
+    );
+  };
+
+  const handleUploadError = (res: { data: { error: string } }) => {
+    toast.error(res.data.error, {
+      duration: 2000,
+      style: {
+        backgroundColor: "rgb(63 63 70)",
+        color: "white",
+        border: "2px solid rgb(82 82 91)",
+      },
+      iconTheme: {
+        primary: "red",
+        secondary: "white",
+      },
+    });
+  };
+
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -88,46 +145,21 @@ export default function Chat() {
           setConvId(res2.data.id);
           window.history.replaceState(null, "", `/chat/${res2.data.id}`);
           const res = await uploadFile(res2.data.id, files[0]);
-          localStorage.setItem(
-            "user",
-            JSON.stringify({ ...user, convos: [...user.convos, res2.data.id] })
-          );
+          updateUserAndLocalStorage(res2.data.id);
           if (res.status === 200) {
-            setDoc((prev) => [...(prev || []), ...files]);
             setFile({ fileName: files[0].name, fileMime: files[0].type, linkUploaded: false });
-            toast.success("Successfully uploaded", {
-              duration: 2000,
-              style: {
-                backgroundColor: "rgb(63 63 70)",
-                color: "white",
-                border: "2px solid rgb(82 82 91)",
-              },
-              iconTheme: {
-                primary: "green",
-                secondary: "white",
-              },
-            });
+            handleUploadSuccess();
           }
         } else {
-          toast.error(res2.data.error, {
-            duration: 2000,
-            style: {
-              backgroundColor: "rgb(63 63 70)",
-              color: "white",
-              border: "2px solid rgb(82 82 91)",
-            },
-            iconTheme: {
-              primary: "red",
-              secondary: "white",
-            },
-          });
+          handleUploadError(res2.data.error);
         }
       } else {
         const res = await uploadFile(convId, files[0]);
         if (res.status === 200) {
-          setDoc([...files]);
           setFile({ fileName: files[0].name, fileMime: files[0].type, linkUploaded: false });
-          console.log(files);
+          handleUploadSuccess();
+        } else {
+          handleUploadError(res.data.error);
         }
       }
       setLoading(false);
@@ -141,46 +173,16 @@ export default function Chat() {
       setLoading(true);
       const res = await reuploadFile(convId, files[0]);
       if (res.status === 200) {
-        setDoc([...files]);
         setFile({ fileName: files[0].name, fileMime: files[0].type, linkUploaded: false });
-        toast.success("Successfully re-uploaded", {
-          duration: 2000,
-          style: {
-            backgroundColor: "rgb(63 63 70)",
-            color: "white",
-            border: "2px solid rgb(82 82 91)",
-          },
-          iconTheme: {
-            primary: "green",
-            secondary: "white",
-          },
-        });
+        handleUploadSuccess();
       } else {
-        toast.error(res.data.error, {
-          duration: 2000,
-          style: {
-            backgroundColor: "rgb(63 63 70)",
-            color: "white",
-            border: "2px solid rgb(82 82 91)",
-          },
-          iconTheme: {
-            primary: "red",
-            secondary: "white",
-          },
-        });
+        handleUploadError(res.data.error);
       }
       setLoading(false);
     } else {
-      toast.error("You cannot re-upload the same file", {
-        duration: 2000,
-        style: {
-          backgroundColor: "rgb(63 63 70)",
-          color: "white",
-          border: "2px solid rgb(82 82 91)",
-        },
-        iconTheme: {
-          primary: "red",
-          secondary: "white",
+      handleUploadError({
+        data: {
+          error: "you can't reupload the same file",
         },
       });
     }
@@ -214,7 +216,7 @@ export default function Chat() {
       if (res && res.status === 200) {
         setMessages((prev) => [
           ...prev,
-          { id: res.data.messageIds[0], text: query, sender: "user", doc },
+          { id: res.data.messageIds[0], text: query, sender: "user" },
         ]);
         setMessages((prev) => [
           ...prev,
@@ -222,25 +224,13 @@ export default function Chat() {
             id: res.data.messageIds[1],
             text: res.data.response.content,
             sender: "bot",
-            doc: null,
           },
         ]);
         textAreaRef.current.value = "";
         handleInput();
         chatHistory.addLastN(res.data.messageIds as string[]);
       } else {
-        toast.error(res.data.error, {
-          duration: 2000,
-          style: {
-            backgroundColor: "rgb(63 63 70)",
-            color: "white",
-            border: "2px solid rgb(82 82 91)",
-          },
-          iconTheme: {
-            primary: "red",
-            secondary: "white",
-          },
-        });
+        handleUploadError(res.data.error);
       }
     }
   };
@@ -257,25 +247,7 @@ export default function Chat() {
           setLoading(true);
           if (messages.length === 0 && convId === "new") {
             console.log(loading);
-            const res2 = await new_chat(
-              user.username,
-              null,
-              query
-              // user.groq_api_key
-            );
-            if (res2.status === 200) {
-              setUser({ ...user, convos: [...user.convos, res2.data.id] });
-              localStorage.setItem(
-                "user",
-                JSON.stringify({
-                  ...user,
-                  convos: [...user.convos, res2.data.id],
-                })
-              );
-              setConvId(res2.data.id);
-              window.history.replaceState(null, "", `/chat/${res2.data.id}`);
-              await sendMessage(query, res2.data.id);
-            }
+            await handleNewChat(query);
           }
           await sendMessage(query, convId);
         } catch (error) {
@@ -304,94 +276,48 @@ export default function Chat() {
           "user",
           JSON.stringify({ ...user, groq_api_key: apiKeyRef.current.value })
         );
-        toast.success("Successfully updated", {
-          duration: 2000,
-          style: {
-            backgroundColor: "rgb(63 63 70)",
-            color: "white",
-            border: "2px solid rgb(82 82 91)",
-          },
-          iconTheme: {
-            primary: "green",
-            secondary: "white",
-          },
-        });
+        handleUploadSuccess();
         setApiStatus(true);
         await handleSendQuery();
         // setUser({ ...user, groq_api_key: apiKeyRef.current.value });
         setShowModal(false);
       } else {
-        toast.error("Something went wrong check api key", {
-          duration: 2000,
-          style: {
-            backgroundColor: "rgb(63 63 70)",
-            color: "white",
-            border: "2px solid rgb(82 82 91)",
-          },
-          iconTheme: {
-            primary: "red",
-            secondary: "white",
-          },
-        });
+        handleUploadError(
+          res.data.error || {
+            data: {
+              error: "Something went wrong",
+            },
+          }
+        );
       }
+    }
+  };
+
+  const handleUploadYoutube = async (convId: string, videoUrl: string) => {
+    const res = await uploadYoutubeVideo(convId, videoUrl);
+    if (res.status === 200) {
+      handleUploadSuccess();
+    } else {
+      handleUploadError(res);
     }
   };
 
   const handleLink = async () => {
     setIsLinkSelected(false);
-    if (LinkRef.current && user && convId !== "new") {
-      console.log(user._id);
-      setLoading(true);
-      const res = await uploadYoutubeVideo(convId, LinkRef.current.value);
-      if (res.status === 200) {
-        toast.success("Successfully uploaded", {
-          duration: 2000,
-          style: {
-            backgroundColor: "rgb(63 63 70)",
-            color: "white",
-            border: "2px solid rgb(82 82 91)",
-          },
-          iconTheme: {
-            primary: "green",
-            secondary: "white",
-          },
-        });
+    if (!LinkRef.current || !user) return;
+    setLoading(true);
+    try {
+      if (convId !== "new") {
+        await handleUploadYoutube(convId, LinkRef.current.value);
       } else {
-        toast.error("Something went wrong check api key", {
-          duration: 2000,
-          style: {
-            backgroundColor: "rgb(63 63 70)",
-            color: "white",
-            border: "2px solid rgb(82 82 91)",
-          },
-          iconTheme: {
-            primary: "red",
-            secondary: "white",
-          },
-        });
+        await handleNewChat(LinkRef.current.value);
+        await handleUploadYoutube(convId, LinkRef.current.value);
       }
-      setLoading(false);
-    } else if (convId === "new" && LinkRef.current && user) {
-      const res2 = await new_chat(
-        user.username,
-        null,
-        LinkRef.current.value
-        // user.groq_api_key
-      );
-      if (res2.status === 200) {
-        setUser({ ...user, convos: [...user.convos, res2.data.id] });
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            ...user,
-            convos: [...user.convos, res2.data.id],
-          })
-        );
-        setConvId(res2.data.id);
-        window.history.replaceState(null, "", `/chat/${res2.data.id}`);
-        await sendMessage(LinkRef.current.value, res2.data.id);
-      }
+    } catch (error) {
+      console.log(error);
+      // handleUploadError("Failed to process the link");
     }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -406,7 +332,6 @@ export default function Chat() {
             setApiStatus(res.data.api_status);
             if (res.data.file) {
               setFile(res.data.file);
-              setDoc([res.data.file]);
             }
             setFile(prev => ({...prev, linkUploaded: res.data.linkUploaded}));
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -414,18 +339,12 @@ export default function Chat() {
           }
         } catch (error) {
           console.log(error);
-          toast.error("Something went wrong", {
-            duration: 2000,
-            style: {
-              backgroundColor: "rgb(63 63 70)",
-              color: "white",
-              border: "2px solid rgb(82 82 91)",
-            },
-            iconTheme: {
-              primary: "red",
-              secondary: "white",
-            },
-          });
+          handleUploadError({
+              data: {
+                error: "Something went wrong",
+              },
+            }
+          );
         }
       }
     };
@@ -483,36 +402,32 @@ export default function Chat() {
         </Modal>
       )}
       <div className="text-center mt-4">
-        {/* <h1 className="text-xl font-semibold tracking-wide">
-          Chat with your <strong className="text-violet-400">documents</strong>!
-        </h1> */}
-        {(doc && doc.length > 0) ||
-          (file && file.fileName.length !== 0 && (
-            <div className="flex flex-row mb-6 gap-1 relative w-fit justify-center mx-auto">
-              <h2 className="font-medium text-zinc-400 max-w-[28ch] whitespace-nowrap truncate overflow-hidden tracking-wide">
-                {doc?.[0]?.name || file.fileName} uploaded successfully
-              </h2>
-              <img src="../src/assets/file-check.svg" alt="ok" />
-              <div className="absolute -right-10">
-                <input
-                  type="file"
-                  name="reupload"
-                  className="w-8 -translate-y-1 -translate-x-1 file:hover:cursor-pointer opacity-0"
-                  id="reupload"
-                  accept="image/jpeg, image/png, application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.openxmlformats-officedocument.presentationml.presentation, text/plain"
-                  onChange={handleReupload}
-                />
-                <img
-                  src="../src/assets/replace.svg"
-                  className="w-6 -translate-y-[1.9rem] pointer-events-none"
-                  alt="re-upload"
-                />
-              </div>
+        {file.fileName.length !== 0 && (
+          <div className="flex flex-row mb-6 gap-1 relative w-fit justify-center mx-auto">
+            <h2 className="font-medium text-zinc-400 max-w-[28ch] whitespace-nowrap truncate overflow-hidden tracking-wide">
+              {file.fileName} uploaded successfully
+            </h2>
+            <img src="../src/assets/file-check.svg" alt="ok" />
+            <div className="absolute -right-10">
+              <input
+                type="file"
+                name="reupload"
+                className="w-8 -translate-y-1 -translate-x-1 file:hover:cursor-pointer opacity-0"
+                id="reupload"
+                accept="image/jpeg, image/png, application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.openxmlformats-officedocument.presentationml.presentation, text/plain"
+                onChange={handleReupload}
+              />
+              <img
+                src="../src/assets/replace.svg"
+                className="w-6 -translate-y-[1.9rem] pointer-events-none"
+                alt="re-upload"
+              />
             </div>
-          ))}
+          </div>
+        )}
       </div>
       {/* //TODO: Some UI Fixes here :) */}
-      {!doc && file.fileName.length === 0 && messages.length === 0 ? (
+      {!file.fileName.length && messages.length === 0 ? (
         // <div className="mt-4 w-72 p-4 mx-auto flex flex-col gap-1 items-center">
         //   <input
         //     type="file"

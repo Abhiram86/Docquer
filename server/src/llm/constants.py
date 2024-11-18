@@ -61,7 +61,8 @@ def getFileText(file: bytes, fileType: str) -> str:
             return readImage(file)
         case _:
             return "nothing matched"
-        
+
+
 def readPDF(file: bytes) -> str:
     output = ""
     pdf_stream = BytesIO(file)
@@ -70,8 +71,9 @@ def readPDF(file: bytes) -> str:
     for i, page in enumerate(pdf_reader.pages):
         page_text = page.extract_text()
         output += f"Page{i+1}:\n{page_text}\n" + '-'*40 + "\n"
-    
+
     return output
+
 
 def readPPTX(file: bytes) -> str:
     pptx_stream = BytesIO(file)
@@ -86,9 +88,11 @@ def readPPTX(file: bytes) -> str:
                 for paragh in shape.text_frame.paragraphs:
                     output += paragh.text + "\n"
         return output
-    
+
+
 def readTXT(file: bytes) -> str:
     return file.decode('utf-8')
+
 
 def readDOCX(file: bytes) -> str:
     docx_stream = BytesIO(file)
@@ -100,6 +104,7 @@ def readDOCX(file: bytes) -> str:
 
     return output
 
+
 def readImage(file):
     image = Image.open(BytesIO(file))
     reader = easyocr.Reader(['en'])
@@ -107,6 +112,7 @@ def readImage(file):
     res = reader.readtext(array)
     text = " ".join([r[1] for r in res])
     return text
+
 
 def split_into_chunks(data: str) -> List[str]:
     text_splitter = RecursiveCharacterTextSplitter(
@@ -118,27 +124,84 @@ def split_into_chunks(data: str) -> List[str]:
     texts = text_splitter.split_text(data)
     return texts
 
+
 def get_index(conv_id: str) -> Index:
     index_name = f"docquer-{conv_id}"
-    index = pc.Index(index_name)
-    return index
+    try:
+        index = pc.Index(index_name)
+        # Try to describe index to ensure it exists and is ready
+        index.describe_index_stats()
+        return index
+    except Exception as e:
+        print(f"Error getting index: {e}")
+        raise HTTPException(status_code=500, detail="Index not ready or doesn't exist")
 
-def insert_data(conv_id: str, data: List[str]):
-    index = get_index(conv_id)
-    embeddings = embeddings_model.encode(data)
-    data = [{
-        "id": str(uuid.uuid4()),
-        "values": embedding.tolist(),
-        "metadata": {"text": data[i]}
-    } for i, embedding in enumerate(embeddings)]
-    index.upsert(vectors=data)
+
+def insert_data(conv_id: str, data: List[str], replace: bool = False):
+    if not data:
+        return
+        
+    try:
+        index = get_index(conv_id)
+        
+        # If replace is True, delete existing vectors
+        if replace:
+            try:
+                index.delete(delete_all=True)
+            except Exception as e:
+                print(f"Error deleting vectors: {e}")
+                
+        embeddings = embeddings_model.encode(data)
+        vectors = [{
+            "id": str(uuid.uuid4()),
+            "values": embedding.tolist(),
+            "metadata": {"text": data[i]}
+        } for i, embedding in enumerate(embeddings)]
+        
+        # Split vectors into smaller batches
+        batch_size = 100
+        for i in range(0, len(vectors), batch_size):
+            batch = vectors[i:i + batch_size]
+            index.upsert(vectors=batch)
+            
+    except Exception as e:
+        print(f"Error inserting data: {e}")
+        raise HTTPException(status_code=500, detail=f"Error inserting data: {str(e)}")
+
 
 def init_vector_db(chunks: List[str], conv_id: str) -> Index:
+    if not chunks:
+        raise HTTPException(status_code=400, detail="No data to index")
+
     index_name = f"docquer-{conv_id}"
     try:
-        if index_name not in pc.list_indexes():
-            pc.create_index(index_name, dimension=384, metric='cosine', spec=spec)
-        index = pc.Index(index_name)
+        # Check if index exists and is ready
+        try:
+            index = pc.Index(index_name)
+            index.describe_index_stats()
+        except:
+            # Create new index if it doesn't exist or isn't ready
+            if index_name in pc.list_indexes():
+                pc.delete_index(index_name)
+            pc.create_index(
+                name=index_name,
+                dimension=384,
+                metric='cosine',
+                spec=spec
+            )
+            # Wait for index to be ready
+            index = pc.Index(index_name)
+            retries = 0
+            while retries < 5:
+                try:
+                    index.describe_index_stats()
+                    break
+                except:
+                    retries += 1
+                    import time
+                    time.sleep(2)
+
+        # Insert data in batches
         insert_data(conv_id, chunks)
         return index
     except Exception as e:

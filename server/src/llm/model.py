@@ -73,12 +73,12 @@ def create_index(file: bytes, fileType: str, conv_id: str):
     init_vector_db(chunks, conv_id)
 
 def delete_index(conv_id: str):
-    print(pc.list_indexes())
     index_name = f"docquer-{conv_id}"
-    if index_name in pc.list_indexes():
+    try:
         pc.delete_index(index_name)
-    else:
-        print(f"no index found with name {index_name}")
+    except Exception as e:
+        print("Error deleting index: ", e)
+        raise HTTPException(status_code=500, detail="Error deleting existing index")
         
 def replace_index(file: bytes, fileType: str, conv_id: str):
     index_name = f"docquer-{conv_id}"

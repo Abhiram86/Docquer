@@ -1,7 +1,8 @@
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { coldarkDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism";
 import toast from "react-hot-toast";
+import remarkGfm from "remark-gfm";
 
 export const MDRender = ({ mdString }: { mdString: string }) => {
   // Function to copy code to clipboard
@@ -28,6 +29,7 @@ export const MDRender = ({ mdString }: { mdString: string }) => {
   return (
     <section className="chat-block">
       <ReactMarkdown
+        remarkPlugins={remarkGfm}
         components={{
           code({ inline, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || "");
@@ -38,7 +40,7 @@ export const MDRender = ({ mdString }: { mdString: string }) => {
               <div className="relative">
                 <SyntaxHighlighter
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  style={coldarkDark as any}
+                  style={dracula as any}
                   language={language}
                   PreTag="div"
                   {...props}

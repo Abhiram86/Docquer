@@ -13,7 +13,7 @@ import {
   reuploadFile,
   update_api_key,
   uploadFile,
-  uploadLinkData,
+  // uploadLinkData,
   uploadYoutubeVideo,
 } from "../api/llm";
 import { MDRender } from "../components/MDRender";
@@ -35,7 +35,7 @@ export default function Chat() {
     linkUploaded: false,
   });
   const [focus, setFocus] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]|null>(null);
   const [showModal, setShowModal] = useState(false);
   const [convId, setConvId] = useState(id || "new");
   const [loading, setLoading] = useState(false);
@@ -206,7 +206,6 @@ export default function Chat() {
     if (convId != "new" && textAreaRef.current && user) {
       const res = await chat_with_llama(
         user.username,
-        // user.groq_api_key,
         query,
         file.fileMime,
         file.linkUploaded,
@@ -215,11 +214,11 @@ export default function Chat() {
       );
       if (res && res.status === 200) {
         setMessages((prev) => [
-          ...prev,
+          ...(prev || []),
           { id: res.data.messageIds[0], text: query, sender: "user" },
         ]);
         setMessages((prev) => [
-          ...prev,
+          ...(prev || []),
           {
             id: res.data.messageIds[1],
             text: res.data.response.content,
@@ -245,7 +244,7 @@ export default function Chat() {
       if (query && user) {
         try {
           setLoading(true);
-          if (messages.length === 0 && convId === "new") {
+          if (!messages || messages.length === 0 && convId === "new") {
             console.log(loading);
             await handleNewChat(query);
           }
@@ -297,6 +296,7 @@ export default function Chat() {
     const res = await uploadYoutubeVideo(convId, videoUrl);
     if (res.status === 200) {
       handleUploadSuccess();
+      setFile(prev => ({...prev, linkUploaded: true}));
     } else {
       handleUploadError(res);
     }
@@ -307,25 +307,34 @@ export default function Chat() {
     if (!LinkRef.current || !user) return;
     setLoading(true);
     try {
-      if (convId !== "new") {
-        await handleUploadYoutube(convId, LinkRef.current.value);
-      } else {
-        await handleNewChat(LinkRef.current.value);
-        await handleUploadYoutube(convId, LinkRef.current.value);
+      let currentConvId = convId;
+      if (currentConvId === "new") {
+        const res = await new_chat(user.username, null, "");
+        if (res.status === 200) {
+          currentConvId = res.data.id;
+          setConvId(currentConvId);
+          window.history.replaceState(null, "", `/chat/${currentConvId}`);
+          localStorage.setItem("user", JSON.stringify({ ...user, convos: [...user.convos, currentConvId] }));
+        }
       }
+      await handleUploadYoutube(currentConvId, LinkRef.current.value);
     } catch (error) {
       console.log(error);
-      // handleUploadError("Failed to process the link");
+      handleUploadError({
+        data: {
+          error: "Failed to process the link"
+        }
+      });
     }
     setLoading(false);
   };
 
   useEffect(() => {
     const handleMessages = async () => {
-      if (convId != "new" && user && user._id) {
+      if (user && user._id) {
         try {
           const res = await get_messages(convId, user._id);
-          console.log("hitting");
+          console.log("Getting messages for conversation:", convId);
 
           if (res.status === 200) {
             setMessages(res.data.messages);
@@ -334,17 +343,32 @@ export default function Chat() {
               setFile(res.data.file);
             }
             setFile(prev => ({...prev, linkUploaded: res.data.linkUploaded}));
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            chatHistory.addLastN(res.data.messages.map((m: any) => m._id));
-          }
-        } catch (error) {
-          console.log(error);
-          handleUploadError({
-              data: {
-                error: "Something went wrong",
-              },
+            if (res.data.messages && res.data.messages.length > 0) {
+              //eslint-disable-next-line @typescript-eslint/no-explicit-any
+              chatHistory.addLastN(res.data.messages.map((m: any) => m._id));
             }
-          );
+          } else {
+            // Handle specific error cases
+            const errorMessage = res.data?.error || "Something went wrong";
+            if (res.status === 404) {
+              if (errorMessage.includes("User not found")) {
+                router("/auth?mode=login");
+              }
+            }
+            handleUploadError({
+              data: {
+                error: errorMessage
+              }
+            });
+          }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (error: any) {
+          console.error("Error fetching messages:", error);
+          handleUploadError({
+            data: {
+              error: error?.response?.data?.error || "Failed to load messages"
+            }
+          });
         }
       }
     };
@@ -381,7 +405,7 @@ export default function Chat() {
         <Modal
           title="Upload the page content"
           subTitle="Enter the link copieed"
-          className="flex flex-col w-72 gap-2 bg-zinc-950 border-zinc-600"
+          className="flex flex-col w-80 gap-2 bg-zinc-950 border-zinc-600"
         >
           <Input
             placeholder="Enter the link"
@@ -427,7 +451,7 @@ export default function Chat() {
         )}
       </div>
       {/* //TODO: Some UI Fixes here :) */}
-      {!file.fileName.length && messages.length === 0 ? (
+      {file.fileName.length === 0 && (!messages || (messages && messages.length === 0)) ? (
         // <div className="mt-4 w-72 p-4 mx-auto flex flex-col gap-1 items-center">
         //   <input
         //     type="file"
@@ -475,7 +499,7 @@ export default function Chat() {
         )
       )}
       <div className="flex flex-col gap-2 pb-20">
-        {messages.map((message, index) => (
+        {messages && messages.map((message, index) => (
           <div key={index} className="flex flex-row items-start gap-2">
             {message.sender === "bot" && (
               <img
@@ -492,7 +516,6 @@ export default function Chat() {
               }`}
             >
               <MDRender mdString={message.text} />
-              {/* {message.text} */}
             </div>
           </div>
         ))}

@@ -152,23 +152,77 @@ async def get_convos(req: GetConvos):
 
 @router.post("/get-messages")
 async def get_messages(req: GetMessages):
-    conv = await db.find("convos", {"_id": ObjectId(req.id)})
-    user = await db.find("users", {'_id': ObjectId(req.userId)})
-    api_status = True if len(user[0]['groq_api_key']) > 0 else False
-    if len(conv) > 0:
+    if req.id == "new":
+        try:
+            user = await db.find("users", {'_id': ObjectId(req.userId)})
+            if not user:
+                return JSONResponse(
+                    content={"error": "User not found"},
+                    status_code=404
+                )
+            api_status = True if len(user[0]['groq_api_key']) > 0 else False
+            return {"messages": None, "file": None, "api_status": api_status, "linkUploaded": False}
+        except Exception as e:
+            print(f"Error in get_messages for new conversation: {str(e)}")
+            return JSONResponse(
+                content={"error": "Failed to get user information"},
+                status_code=500
+            )
+        
+    try:
+        # Validate conversation ID
+        if not ObjectId.is_valid(req.id):
+            return JSONResponse(
+                content={"error": "Invalid conversation ID"},
+                status_code=400
+            )
+            
+        conv = await db.find("convos", {"_id": ObjectId(req.id)})
+        user = await db.find("users", {'_id': ObjectId(req.userId)})
+        
+        if not user:
+            return JSONResponse(
+                content={"error": "User not found"},
+                status_code=404
+            )
+            
+        api_status = True if len(user[0]['groq_api_key']) > 0 else False
+        
+        if not conv or len(conv) == 0:
+            return JSONResponse(
+                content={"error": "Conversation not found"},
+                status_code=404
+            )
+            
         msgs = await db.find_by_ids("Message", conv[0]['messages'])
         linkUploaded = False
         if conv[0].get('links'):
             linkUploaded = True if len(conv[0]['links']) > 0 else False
-        if conv[0]["fileName"]:
-            return {"messages": msgs, "file": {
-                "fileName": conv[0]["fileName"],
-                "fileMime": conv[0]["fileMime"]
-            }, "api_status": api_status, "linkUploaded": linkUploaded}
-        return {"messages": msgs, "file": None, "api_status": api_status, "linkUploaded": linkUploaded}
-    else:
-        return JSONResponse(content={"error": "Not found"}, status_code=404)
-    
+            
+        if conv[0].get("fileName"):
+            return {
+                "messages": msgs if msgs else None,
+                "file": {
+                    "fileName": conv[0]["fileName"],
+                    "fileMime": conv[0]["fileMime"]
+                },
+                "api_status": api_status,
+                "linkUploaded": linkUploaded
+            }
+        return {
+            "messages": msgs if msgs else None,
+            "file": None,
+            "api_status": api_status,
+            "linkUploaded": linkUploaded
+        }
+            
+    except Exception as e:
+        print(f"Error in get_messages: {str(e)}")
+        return JSONResponse(
+            content={"error": f"Failed to get messages: {str(e)}"},
+            status_code=500
+        )
+
 @router.post("/get-conv-details")
 async def get_conv_details(req: GetConvDetails):
     convs = await db.find_by_ids("convos", req.ids)

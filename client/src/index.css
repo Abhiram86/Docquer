@@ -13,6 +13,7 @@
 *::-webkit-scrollbar-thumb {
   background: white;
   border-radius: 5px;
+  cursor: pointer;
 }
 
 *::-webkit-scrollbar:horizontal {
@@ -40,19 +41,36 @@
   h2,
   h3 {
     margin-block: 1.25rem;
+    font-size: x-large;
   }
   h4,
   h5,
   h6 {
     margin-block: 0.75rem;
+    font-size: large;
+    font-weight: bold;
   }
-  pre {
-    overflow-x: auto;
+  p {
+    line-height: 2rem;
   }
   ul {
     margin-block: 1rem;
     li {
       margin-block: 0.5rem;
+      line-height: 2rem;
+    }
+  }
+  table {
+    overflow-x: auto;
+    padding: 5px;
+    background: rgb(24 24 27);
+    /* border-radius: 15px; */
+    tr {
+      th,
+      td {
+        border: 1px solid rgb(50 50 55);
+        padding: 0.5rem;
+      }
     }
   }
 }

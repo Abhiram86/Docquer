@@ -21,6 +21,7 @@ export default function ChatCard({
   onClick?: () => void;
 }) {
   const [showMore, setShowMore] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const context = useContext(ThemeContext);
   if (!context) {
     throw new Error("ThemeContext not found");
@@ -28,6 +29,7 @@ export default function ChatCard({
   const { setUser } = context;
   const handleDelete = async () => {
     setShowMore(false);
+    setIsDeleting(true);
     const res = await remove_conversation(conv_id);
     if (res.status === 200) {
       toast.success(res.data.success, {
@@ -63,13 +65,14 @@ export default function ChatCard({
         },
       });
     }
+    setIsDeleting(false);
   };
   return (
     <>
       {showMore && (
         <Modal
           title="Delete Chat"
-          className="w-72 border-zinc-700"
+          className="w-72 bg-zinc-950 border-zinc-700"
           subTitle="Are you sure?"
         >
           <p className="text-yellow-400">You cannot undo this action!</p>
@@ -87,7 +90,7 @@ export default function ChatCard({
       )}
       <div
         onClick={onClick}
-        className="p-4 relative hover:bg-zinc-900 z-0 transition-colors text-balance bg-zinc-900/50 backdrop-blur-sm overflow-clip border-[3px] h-32 w-[316.8px] border-zinc-700 rounded-lg"
+        className={`p-4 relative hover:bg-zinc-900 z-0 transition-colors text-balance bg-zinc-900/50 backdrop-blur-sm overflow-clip border-[3px] h-32 w-[316.8px] border-zinc-700 rounded-lg ${isDeleting ? "pointer-events-none animate-bounce" : ""}`}
       >
         <img
           src="../src/assets/dots.svg"

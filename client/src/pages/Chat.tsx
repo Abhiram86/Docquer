@@ -451,53 +451,25 @@ export default function Chat() {
         )}
       </div>
       {/* //TODO: Some UI Fixes here :) */}
-      {file.fileName.length === 0 && (!messages || (messages && messages.length === 0)) ? (
-        // <div className="mt-4 w-72 p-4 mx-auto flex flex-col gap-1 items-center">
-        //   <input
-        //     type="file"
-        //     multiple
-        //     name="file-input"
-        //     id="input"
-        //     onChange={handleFileUpload}
-        //     accept="image/jpeg, image/png, application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.openxmlformats-officedocument.presentationml.presentation, text/plain"
-        //     className="file:mr-4 w-72 file:py-2 file:px-4 px-4 p-2 rounded-lg border-2 border-zinc-700 bg-black file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-violet-700 file:text-zinc-100 hover:file:bg-zinc-950 hover:file:text-violet-100 cursor-pointer file:transition-all file:cursor-pointer"
-        //   />
-        //   <div className="relative">
-        //     <input
-        //       type="url"
-        //       placeholder="paste the copied link here"
-        //       className="bg-black text-sky-600 border-2 border-zinc-700 rounded-lg px-4 py-[0.375rem] w-72"
-        //     />
-        //     <button className="absolute font-medium top-1 right-1 rounded-lg px-2 py-1 bg-zinc-100/75 backdrop-blur-sm text-zinc-900">
-        //       Add
-        //     </button>
-        //   </div>
-        //   <div className="flex mt-2 w-72 rounded-r-xl bg-yellow-950/80 gap-2">
-        //     <div className="w-2 bg-yellow-400" />
-        //     <div className="px-4 py-2">
-        //       <p className="font-medium tracking-wide text-yellow-400">Note</p>
-        //       <p className="tracking-wide text-zinc-200">
-        //         Youtube video cant be conversed unless it has transcripts
-        //       </p>
-        //     </div>
-        //   </div>
-        // </div>
+      {file.fileName.length === 0 && (!messages || (messages && messages.length === 0)) && (
         <div className="text-2xl h-[calc(100vh-14.25rem)] font-semibold mx-auto w-fit">
           <WritingText
             text="Let's Learn Something New"
             className="relative top-1/2"
           />
         </div>
-      ): (
-        file.fileName.length !== 0 && (
-          <div className="flex w-fit flex-row gap-2 mb-4 border top-0 sticky items-center mx-auto">
-            <h1 className="text-zinc-400 font-semibold max-w-[28ch] whitespace-nowrap truncate overflow-hidden tracking-wide">
-              {file.fileName} uploaded
-            </h1>
-            <img src="../src/assets/file-check.svg" className="w-6" alt="file" />
-          </div>
-        )
-      )}
+      )
+      // : (
+      //   file.fileName.length !== 0 && (
+      //     <div className="flex w-fit flex-row gap-2 mb-4 border top-0 sticky items-center mx-auto">
+      //       <h1 className="text-zinc-400 font-semibold max-w-[28ch] whitespace-nowrap truncate overflow-hidden tracking-wide">
+      //         {file.fileName} uploaded
+      //       </h1>
+      //       <img src="../src/assets/file-check.svg" className="w-6" alt="file" />
+      //     </div>
+      //   )
+      // )
+      }
       <div className="flex flex-col gap-2 pb-20">
         {messages && messages.map((message, index) => (
           <div key={index} className="flex flex-row items-start gap-2">

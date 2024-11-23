@@ -3,6 +3,9 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism";
 import toast from "react-hot-toast";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 export const MDRender = ({ mdString }: { mdString: string }) => {
   // Function to copy code to clipboard
@@ -29,7 +32,8 @@ export const MDRender = ({ mdString }: { mdString: string }) => {
   return (
     <section className="chat-block">
       <ReactMarkdown
-        remarkPlugins={remarkGfm}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
         components={{
           code({ inline, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || "");

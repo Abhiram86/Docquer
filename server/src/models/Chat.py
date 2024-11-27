@@ -42,3 +42,7 @@ class GetConvDetails(BaseModel):
 
 class DeleteConversatoin(BaseModel):
     conv_id: str
+
+class UploadLink(BaseModel):
+    link: str
+    conv_id: str

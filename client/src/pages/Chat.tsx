@@ -13,12 +13,13 @@ import {
   reuploadFile,
   update_api_key,
   uploadFile,
-  // uploadLinkData,
-  uploadYoutubeVideo,
+  uploadLinkData,
+  // uploadYoutubeVideo,
 } from "../api/llm";
 import { MDRender } from "../components/MDRender";
 import { FixedSizeArray } from "../constants/chatHistory";
 import WritingText from "../components/writingText";
+import axios from "axios";
 
 type Message = {
   id: string;
@@ -232,6 +233,29 @@ export default function Chat() {
         handleUploadError(res.data.error);
       }
     }
+    // const res = await axios.post('/normal-chat-stream', {
+    //   username: user!.username,
+    //   query: query,
+    //   messageIds: chatHistory.getItems(),
+    //   conv_id: convId
+    // })
+    // const reader = res.data.getReader();
+    // const decoder = new TextDecoder();
+    // let done = false;
+    // while (!done) {
+    //   const { value, done: doneReading } = await reader.read();
+    //   done = doneReading;
+    //   const chunkValue = decoder.decode(value);
+    //   if (chunkValue) {
+    //     const data = JSON.parse(chunkValue);
+    //     if (data.response) {
+    //       console.log(data); 
+    //       textAreaRef.current!.value = "";
+    //       handleInput();
+    //       // chatHistory.addLastN(data.messageIds as string[]);
+    //     }
+    //   }
+    // }
   };
 
   const handleSendQuery = async () => {
@@ -244,7 +268,7 @@ export default function Chat() {
       if (query && user) {
         try {
           setLoading(true);
-          if (!messages || messages.length === 0 && convId === "new") {
+          if (convId === "new") {
             console.log(loading);
             await handleNewChat(query);
           }
@@ -292,8 +316,8 @@ export default function Chat() {
     }
   };
 
-  const handleUploadYoutube = async (convId: string, videoUrl: string) => {
-    const res = await uploadYoutubeVideo(convId, videoUrl);
+  const handleUploadYoutube = async (convId: string, url: string) => {
+    const res = await uploadLinkData(url, convId);
     if (res.status === 200) {
       handleUploadSuccess();
       setFile(prev => ({...prev, linkUploaded: true}));

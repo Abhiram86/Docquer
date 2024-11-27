@@ -182,7 +182,7 @@ def file_chat(api_key: str, username, query: str, conv_id: str, prevMessages):
     print(context)
     return {'error': "No relevant context found to answer the query."}
 
-def upload_link_data(url: str, conv_id: str):
+def get_link_data(url: str, conv_id: str):
     try:
         # Validate URL
         url = url.strip()
@@ -214,19 +214,12 @@ def upload_link_data(url: str, conv_id: str):
         # Get text and clean it
         text = soup.get_text(separator='\n', strip=True)
         chunks = split_into_chunks(text)
+
+        print(f"Number of chunks: {len(chunks)}")
+
+        update_index(file=None, fileType=None, text=text, conv_id=conv_id)
         
-        try:
-            # Initialize vector DB
-            index = get_index(conv_id)
-            if not index:
-                index = init_vector_db(conv_id)
-            
-            # Upsert chunks into vector DB
-            index.upsert(vectors=chunks)
-            return {'success': True, 'message': 'Webpage content processed and stored successfully'}
-            
-        except Exception as e:
-            return {"error": f"Error processing request: {str(e)}"}
+        return {"success": "successfully updated"}
             
     except Exception as e:
         return {"error": f"Unexpected error: {str(e)}"}
@@ -312,3 +305,36 @@ def get_youtube_transcript(video_url: str) -> dict:
         return {
             "error": f"Error processing video: {str(e)}"
         }
+
+def normal_chat_stream(name, query, api_key, prevMessages):
+    try:
+        model = ChatGroq(model="llama3-70b-8192", api_key=api_key, temperature=0.5)
+    except Exception as e:
+        yield {"error": str(e)}
+        return
+    
+    content = normal_chat_main_content(name)
+    content2 = normal_chat_editor()
+
+    history = []
+    for d in prevMessages:
+        if d["sender"] == "user":
+            history.append(HumanMessage(content=d["text"]))
+        elif d["sender"] == "ai":
+            history.append(AIMessage(content=d["text"]))
+
+    # Initial message
+    messages = [SystemMessage(content=content), HumanMessage(content=query)]
+    history.insert(0, messages[0])
+    history.append(messages[1])
+    
+    # First query to the model
+    for token in model.stream(history):
+        yield token  # Streaming token-by-token
+
+    # Troubleshooting follow-up query
+    query2 = f"troubleshoot this {msg.content}"
+    messages = [SystemMessage(content=content2), HumanMessage(content=query2)]
+    
+    for token in model.stream(messages):
+        yield token

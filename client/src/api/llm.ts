@@ -175,10 +175,10 @@ export const remove_conversation = async (id: string) => {
   }
 };
 
-export const uploadLinkData = async (url: string, conv_id: string) => {
+export const uploadLinkData = async (link: string, conv_id: string) => {
   try {
-    const response = await axios.post(`${BASE_URL}/upload-link-data`, {
-      url,
+    const response = await axios.post(`${BASE_URL}/upload-link`, {
+      link,
       conv_id
     });
     return response;
@@ -188,26 +188,26 @@ export const uploadLinkData = async (url: string, conv_id: string) => {
   }
 };
 
-export const uploadYoutubeVideo = async (conv_id: string, videoUrl: string) => {
-  const formData = new FormData();
-  formData.append("video_url", videoUrl);
-  formData.append("conv_id", conv_id);
+// export const uploadYoutubeVideo = async (conv_id: string, videoUrl: string) => {
+//   const formData = new FormData();
+//   formData.append("video_url", videoUrl);
+//   formData.append("conv_id", conv_id);
   
-  try {
-    const response = await axios.post(
-      `${BASE_URL}/upload-youtube`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
-    return response;
-  } catch (error: any) {
-    if (error.response) {
-      return error.response;
-    }
-    throw error;
-  }
-};
+//   try {
+//     const response = await axios.post(
+//       `${BASE_URL}/upload-link`,
+//       formData,
+//       {
+//         headers: {
+//           "Content-Type": "multipart/form-data",
+//         },
+//       }
+//     );
+//     return response;
+//   } catch (error: any) {
+//     if (error.response) {
+//       return error.response;
+//     }
+//     throw error;
+//   }
+// };

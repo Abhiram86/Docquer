@@ -1,10 +1,10 @@
 from fastapi import APIRouter, UploadFile, File, Form
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from db import MongoDB
 from models.User import UpdateGroq
-from models.Chat import NormalChat, NewChat, GetConvos, GetMessages, FileChat, GetConvDetails, DeleteConversatoin
+from models.Chat import NormalChat, NewChat, GetConvos, GetMessages, FileChat, GetConvDetails, DeleteConversatoin, UploadLink
 from bson import ObjectId
-from llm.model import normal_chat, title_recommender, subtitle_recommender, file_chat, create_index, replace_index, delete_index, upload_link_data, get_youtube_transcript, update_index
+from llm.model import normal_chat, title_recommender, subtitle_recommender, file_chat, create_index, replace_index, delete_index, get_link_data, get_youtube_transcript, update_index, normal_chat_stream
 from datetime import datetime
 from pydantic import BaseModel
 from typing import List
@@ -56,6 +56,20 @@ async def normal(req: NormalChat):
         }
     })
     return {"response": res, "messageIds": [str(user_msg_id), str(bot_msg_id)]}
+
+@router.post("/normal-chat-stream")
+def normal_chat_stream_endpoint(req: NormalChat):
+    messages = db.find_by_ids("Message", req.messageIds)
+    user = db.find("users", {'username': req.username})
+    api_key = user[0]['groq_api_key']
+    # res = normal_chat(req.username, api_key, req.query, messages)
+    # if res.get('error'):
+    #     return JSONResponse(content={"error":"Something went wrong check the api"}, status_code=400)
+    async def generate():
+        for token in normal_chat_stream(req.username, req.query, api_key, messages):
+            yield f"data: {json.dumps({'data': token})}\n\n"
+        yield "data: [DONE]\n\n"
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 @router.post("/upload-file")
 async def upload(file: UploadFile = File(...), conv_id: str = Form(...)):
@@ -249,8 +263,15 @@ async def deleteConv(req: DeleteConversatoin):
         print(str(e))
         return JSONResponse(content={"error": "Something went wrong"}, status_code=400)
 
-@router.post("/upload-youtube")
-async def upload_youtube_video(video_url: str = Form(...), conv_id: str = Form(...)):
+@router.post("/upload-link")
+async def upload_link(req: UploadLink):
+    isYoutube = req.link.startswith("https://youtu.be")
+    if (isYoutube):
+        return await upload_youtube_video(req.link, req.conv_id)
+    else:
+        return await upload_link_data(req.link, req.conv_id)
+
+async def upload_youtube_video(video_url: str, conv_id: str):
     try:
         print(f"Received request to process YouTube video: {video_url}")
         
@@ -296,17 +317,25 @@ async def upload_youtube_video(video_url: str = Form(...), conv_id: str = Form(.
             status_code=400
         )
 
-class UploadLinkData(BaseModel):
-    conv_id: str
-    url: str
-
-@router.post("/upload-link-data")
-async def upload_link(req: UploadLinkData):
-    res = upload_link_data(req.url, req.conv_id)
-    if res.get('error'):
-        return JSONResponse(content={"error": res['error']}, status_code=400)
-    return JSONResponse(content=res, status_code=200)
-
-class UploadLinkData(BaseModel):
-    conv_id: str
-    url: str
+async def upload_link_data(url: str, conv_id: str):
+    try:
+        link_data = get_link_data(url, conv_id)
+        if link_data.get("error"):
+            return JSONResponse(
+                content={"error": link_data["error"]},
+                status_code=400
+            )
+        await db.update("convos", {"_id": ObjectId(conv_id)}, {"$push": {"links": {
+            "linkName": "",
+            "linkUrl": url,
+            "linkType": "web_link"
+        }}})
+        return {
+            "message": "success"
+        }
+    except Exception as e:
+        print(f"Error in upload_link_data: {str(e)}")
+        return JSONResponse(
+            content={"error": f"Error processing link data: {str(e)}"},
+            status_code=400
+        )

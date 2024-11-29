@@ -28,6 +28,7 @@ Your job is to:
 - For tables, ensure they follow the correct syntax with `|` for columns and `-` for headers.
 - Use a consistent style throughout the document, such as proper indentation, spacing after headers, and bullet point formatting.
 - Make sure the content is clear, readable, and visually appealing.
+- Avoid including any unnecessary information or explanations in the output.
 
 Your output should be a valid, well-structured Markdown document with no unnecessary explanations or commentary. 
 """
@@ -42,6 +43,7 @@ Your role is to inspect and refine the generated Markdown content. Follow these 
 - **Consistency**: Verify consistent indentation and spacing, especially after headers. Ensure that there is a blank line after each header and before any following content.
 - **Formatting**: Ensure proper Markdown syntax, including the correct use of **bold** (`**text**`), **italic** (`*text*`), and **links** (`[text](url)`), when applicable.
 - **Clarity**: Improve readability by ensuring clarity, structure, and flow. Eliminate any extraneous or redundant phrases.
+- **No Preemble** : Avoid including any unnecessary information or explanations in the output.
 
 Your output should only include the corrected and enhanced Markdown content, with no additional explanations.
 """
@@ -64,45 +66,125 @@ def getFileText(file: bytes, fileType: str) -> str:
 
 
 def readPDF(file: bytes) -> str:
-    output = ""
-    pdf_stream = BytesIO(file)
-    pdf_reader = PdfReader(pdf_stream)
+    try:
+        output = "This is a uploaded pdf file\n\n"
+        pdf_stream = BytesIO(file)
+        pdf_reader = PdfReader(pdf_stream)
 
-    for i, page in enumerate(pdf_reader.pages):
-        page_text = page.extract_text()
-        output += f"Page{i+1}:\n{page_text}\n" + '-'*40 + "\n"
+        for i, page in enumerate(pdf_reader.pages):
+            output += f"Page {i+1}:\n"
+            # Extract text content
+            page_text = page.extract_text()
+            if page_text.strip():
+                output += f"Uploaded PDF Content:\n{page_text}\n"
 
-    return output
+            # Extract and process images
+            if '/XObject' in page['/Resources']:
+                xObject = page['/Resources']['/XObject'].get_object()
+                img_num = 1
+                
+                for obj in xObject:
+                    if xObject[obj]['/Subtype'] == '/Image':
+                        try:
+                            image_data = xObject[obj].get_object()
+                            # Convert image data to bytes
+                            if image_data['/Filter'] == '/DCTDecode':
+                                img_bytes = image_data._data
+                                text_from_image = readImage(img_bytes)
+                                if text_from_image and not text_from_image.isspace():
+                                    output += f"\nImage {img_num} Text:\n{text_from_image}\n"
+                                    img_num += 1
+                        except Exception as img_err:
+                            output += f"\nError processing image {img_num}: {str(img_err)}\n"
+                            img_num += 1
+            
+            output += '-'*40 + "\n"
+
+        return output
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing pdf file: {str(e)}")
 
 
 def readPPTX(file: bytes) -> str:
-    pptx_stream = BytesIO(file)
-    presentation = Presentation(pptx_stream)
-    output = ""
-
-    for i, slide in enumerate(presentation.slides):
-        print(f"Slide {i+1}")
-
-        for shape in slide.shapes:
-            if shape.has_text_frame:
-                for paragh in shape.text_frame.paragraphs:
-                    output += paragh.text + "\n"
+    try:
+        pptx_stream = BytesIO(file)
+        presentation = Presentation(pptx_stream)
+        output = "This is a uploaded pptx file\n\n"
+        
+        for slide_num, slide in enumerate(presentation.slides, 1):
+            output += f"Slide {slide_num}:\n"
+            
+            # Extract text content
+            text_content = []
+            for shape in slide.shapes:
+                if shape.has_text_frame:
+                    for paragraph in shape.text_frame.paragraphs:
+                        if paragraph.text.strip():
+                            text_content.append(paragraph.text)
+            
+            if text_content:
+                output += "Uploaded PPTX Paragraph:\n" + "\n".join(text_content) + "\n"
+            
+            # Process images
+            img_num = 1
+            for shape in slide.shapes:
+                if hasattr(shape, "image"):
+                    try:
+                        # Get image bytes
+                        image_bytes = shape.image.blob
+                        text_from_image = readImage(image_bytes)
+                        if text_from_image and not text_from_image.isspace():
+                            output += f"\nImage {img_num} Text:\n{text_from_image}\n"
+                            img_num += 1
+                    except Exception as img_err:
+                        output += f"\nError processing image {img_num}: {str(img_err)}\n"
+                        img_num += 1
+            
+            output += '-'*40 + "\n"
+        
         return output
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing pptx file: {str(e)}")
 
 
 def readTXT(file: bytes) -> str:
-    return file.decode('utf-8')
+    return "This is a uploaded text file\n\n"+file.decode('utf-8')
 
 
 def readDOCX(file: bytes) -> str:
-    docx_stream = BytesIO(file)
-    document = Document(docx_stream)
-    output = ""
-
-    for i, paragh in enumerate(document.paragraphs):
-        output += f"Paragh-{i+1}\n{paragh.text}\n"
-
-    return output
+    try:
+        docx_stream = BytesIO(file)
+        document = Document(docx_stream)
+        output = "This is a uploaded docx file\n\n"
+        
+        # Track paragraph number for better organization
+        para_num = 1
+        img_num = 1
+        
+        # Iterate through the XML elements to preserve order
+        for element in document.element.body:
+            if element.tag.endswith("p"):  # Paragraph block (text)
+                text = ''.join(node.text for node in element.iter() if node.text).strip()
+                if text:
+                    output += f"Uploaded DOCX Paragraph {para_num}: {text}\n"
+                    para_num += 1
+                    
+            elif element.tag.endswith("drawing"):  # Image block
+                try:
+                    for rel in document.part.rels.values():
+                        if "image" in rel.target_ref:  # Check for image reference
+                            image_bytes = rel.target_part.blob
+                            text_from_image = readImage(image_bytes)
+                            if text_from_image and not text_from_image.isspace():
+                                output += f"\nImage {img_num} Text:\n{text_from_image}\n"
+                                img_num += 1
+                except Exception as img_err:
+                    output += f"\nError processing image {img_num}: {str(img_err)}\n"
+                    img_num += 1
+        
+        return output.strip()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing docx file: {str(e)}")
 
 
 def readImage(file):
@@ -110,7 +192,7 @@ def readImage(file):
     reader = easyocr.Reader(['en'])
     array = np.array(image)
     res = reader.readtext(array)
-    text = " ".join([r[1] for r in res])
+    text = "This is a uploaded image file\n\n" + "".join([r[1] for r in res])
     return text
 
 

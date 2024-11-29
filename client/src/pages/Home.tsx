@@ -14,9 +14,9 @@ export default function Home() {
   return (
     <section className="p-2 mb-4 w-full top-0 sticky">
       <div className="text-center text-balance grad-text text-2xl tracking-wider font-medium">
-        <h1 className="font-semibold">
-          Feed the <strong className="text-violet-400">Data</strong> and learn
-          the <strong className="text-violet-400">Data</strong>
+        <h1 className="font-extrabold">
+          Feed The <span className="text-violet-400 font">Data</span> And Learn
+          The <span className="text-violet-400">Data</span>
         </h1>
       </div>
       <div className="relative w-fit mx-auto overflow-clip">

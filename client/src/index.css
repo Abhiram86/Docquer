@@ -88,7 +88,7 @@
     }
   }
 
-  pre:not(:has(div)), p > code, .katex-display {
+  pre:not(:has(div)), p > code, .katex-display, li:has(code)>code {
     background: rgb(36, 36, 36);
     border: 2px solid rgb(50 50 55);
     padding: 0.25rem;

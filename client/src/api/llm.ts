@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 
-const BASE_URL = "http://localhost:8000/llm";
+const BASE_URL = "https://docquerserver.vercel.app/llm";
 
 export const update_api_key = async (id: string, key: string) => {
   const response = await axios.post(`${BASE_URL}/update-groq`, {
@@ -52,15 +52,11 @@ export const uploadFile = async (conv_id: string, file: File) => {
   formdata.append("file", file);
   formdata.append("conv_id", conv_id);
   try {
-    const response = await axios.post(
-      `${BASE_URL}/upload-file`,
-      formdata,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
+    const response = await axios.post(`${BASE_URL}/upload-file`, formdata, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response;
   } catch (error: any) {
     if (error.response) {
@@ -74,15 +70,11 @@ export const reuploadFile = async (conv_id: string, file: File) => {
   formdata.append("file", file);
   formdata.append("conv_id", conv_id);
   try {
-    const response = await axios.post(
-      `${BASE_URL}/replace-file`,
-      formdata,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
+    const response = await axios.post(`${BASE_URL}/replace-file`, formdata, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response;
   } catch (error: any) {
     if (error.response) {
@@ -131,13 +123,10 @@ export const get_convos = async (ids: string[]) => {
 
 export const get_messages = async (id: string, userId: string) => {
   try {
-    const response = await axios.post(
-      `${BASE_URL}/get-messages`,
-      {
-        id,
-        userId,
-      }
-    );
+    const response = await axios.post(`${BASE_URL}/get-messages`, {
+      id,
+      userId,
+    });
     return response;
   } catch (error: any) {
     if (error.response) {
@@ -148,12 +137,9 @@ export const get_messages = async (id: string, userId: string) => {
 
 export const get_conv_details = async (ids: string[]) => {
   try {
-    const response = await axios.post(
-      `${BASE_URL}/get-conv-details`,
-      {
-        ids,
-      }
-    );
+    const response = await axios.post(`${BASE_URL}/get-conv-details`, {
+      ids,
+    });
     return response;
   } catch (error: any) {
     if (error.response) {
@@ -179,11 +165,11 @@ export const uploadLinkData = async (link: string, conv_id: string) => {
   try {
     const response = await axios.post(`${BASE_URL}/upload-link`, {
       link,
-      conv_id
+      conv_id,
     });
     return response;
   } catch (error) {
-    console.error('Error uploading link data:', error);
+    console.error("Error uploading link data:", error);
     throw error;
   }
 };
@@ -192,7 +178,7 @@ export const uploadLinkData = async (link: string, conv_id: string) => {
 //   const formData = new FormData();
 //   formData.append("video_url", videoUrl);
 //   formData.append("conv_id", conv_id);
-  
+
 //   try {
 //     const response = await axios.post(
 //       `${BASE_URL}/upload-link`,

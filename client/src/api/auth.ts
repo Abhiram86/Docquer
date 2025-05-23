@@ -4,7 +4,7 @@ import { FormData } from "../pages/Auth";
 // import { auth } from "../../firebase";
 
 const api = axios.create({
-  baseURL: "http://localhost:8000/auth",
+  baseURL: "https://docquerserver.vercel.app/auth",
 });
 
 export const register = async (data: FormData) => {
@@ -55,10 +55,7 @@ export const update = async (data: {
     const response = await api.post("/update", data);
     if (response.data.message === "success") {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
-      localStorage.setItem(
-        "user",
-        JSON.stringify({ ...user, ...data })
-      );
+      localStorage.setItem("user", JSON.stringify({ ...user, ...data }));
     }
     return response;
   } catch (error: any) {

@@ -19,7 +19,7 @@ import {
 import { MDRender } from "../components/MDRender";
 import { FixedSizeArray } from "../constants/chatHistory";
 import WritingText from "../components/writingText";
-import axios from "axios";
+// import axios from "axios";
 
 type Message = {
   id: string;
@@ -36,7 +36,7 @@ export default function Chat() {
     linkUploaded: false,
   });
   const [focus, setFocus] = useState(false);
-  const [messages, setMessages] = useState<Message[]|null>(null);
+  const [messages, setMessages] = useState<Message[] | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [convId, setConvId] = useState(id || "new");
   const [loading, setLoading] = useState(false);
@@ -83,11 +83,7 @@ export default function Chat() {
 
   const handleNewChat = async (content: string) => {
     if (!user) return;
-    const res = await new_chat(
-      user.username,
-      null,
-      content
-    );
+    const res = await new_chat(user.username, null, content);
     if (res.status === 200) {
       updateUserAndLocalStorage(res.data.id);
       setConvId(res.data.id);
@@ -97,21 +93,18 @@ export default function Chat() {
   };
 
   const handleUploadSuccess = () => {
-    toast.success(
-      "Successfully uploaded",
-      {
-        duration: 3000,
-        style: {
-          backgroundColor: "rgb(63 63 70)",
-          color: "white",
-          border: "2px solid rgb(82 82 91)",
-        },
-        iconTheme: {
-          primary: "green",
-          secondary: "white",
-        },
-      }
-    );
+    toast.success("Successfully uploaded", {
+      duration: 3000,
+      style: {
+        backgroundColor: "rgb(63 63 70)",
+        color: "white",
+        border: "2px solid rgb(82 82 91)",
+      },
+      iconTheme: {
+        primary: "green",
+        secondary: "white",
+      },
+    });
   };
 
   const handleUploadError = (res: { data: { error: string } }) => {
@@ -148,7 +141,11 @@ export default function Chat() {
           const res = await uploadFile(res2.data.id, files[0]);
           updateUserAndLocalStorage(res2.data.id);
           if (res.status === 200) {
-            setFile({ fileName: files[0].name, fileMime: files[0].type, linkUploaded: false });
+            setFile({
+              fileName: files[0].name,
+              fileMime: files[0].type,
+              linkUploaded: false,
+            });
             handleUploadSuccess();
           }
         } else {
@@ -157,7 +154,11 @@ export default function Chat() {
       } else {
         const res = await uploadFile(convId, files[0]);
         if (res.status === 200) {
-          setFile({ fileName: files[0].name, fileMime: files[0].type, linkUploaded: false });
+          setFile({
+            fileName: files[0].name,
+            fileMime: files[0].type,
+            linkUploaded: false,
+          });
           handleUploadSuccess();
         } else {
           handleUploadError(res.data.error);
@@ -174,7 +175,11 @@ export default function Chat() {
       setLoading(true);
       const res = await reuploadFile(convId, files[0]);
       if (res.status === 200) {
-        setFile({ fileName: files[0].name, fileMime: files[0].type, linkUploaded: false });
+        setFile({
+          fileName: files[0].name,
+          fileMime: files[0].type,
+          linkUploaded: false,
+        });
         handleUploadSuccess();
       } else {
         handleUploadError(res.data.error);
@@ -249,7 +254,7 @@ export default function Chat() {
     //   if (chunkValue) {
     //     const data = JSON.parse(chunkValue);
     //     if (data.response) {
-    //       console.log(data); 
+    //       console.log(data);
     //       textAreaRef.current!.value = "";
     //       handleInput();
     //       // chatHistory.addLastN(data.messageIds as string[]);
@@ -320,7 +325,7 @@ export default function Chat() {
     const res = await uploadLinkData(url, convId);
     if (res.status === 200) {
       handleUploadSuccess();
-      setFile(prev => ({...prev, linkUploaded: true}));
+      setFile((prev) => ({ ...prev, linkUploaded: true }));
     } else {
       handleUploadError(res);
     }
@@ -338,7 +343,10 @@ export default function Chat() {
           currentConvId = res.data.id;
           setConvId(currentConvId);
           window.history.replaceState(null, "", `/chat/${currentConvId}`);
-          localStorage.setItem("user", JSON.stringify({ ...user, convos: [...user.convos, currentConvId] }));
+          localStorage.setItem(
+            "user",
+            JSON.stringify({ ...user, convos: [...user.convos, currentConvId] })
+          );
         }
       }
       await handleUploadYoutube(currentConvId, LinkRef.current.value);
@@ -346,8 +354,8 @@ export default function Chat() {
       console.log(error);
       handleUploadError({
         data: {
-          error: "Failed to process the link"
-        }
+          error: "Failed to process the link",
+        },
       });
     }
     setLoading(false);
@@ -366,7 +374,10 @@ export default function Chat() {
             if (res.data.file) {
               setFile(res.data.file);
             }
-            setFile(prev => ({...prev, linkUploaded: res.data.linkUploaded}));
+            setFile((prev) => ({
+              ...prev,
+              linkUploaded: res.data.linkUploaded,
+            }));
             if (res.data.messages && res.data.messages.length > 0) {
               //eslint-disable-next-line @typescript-eslint/no-explicit-any
               chatHistory.addLastN(res.data.messages.map((m: any) => m._id));
@@ -381,17 +392,17 @@ export default function Chat() {
             }
             handleUploadError({
               data: {
-                error: errorMessage
-              }
+                error: errorMessage,
+              },
             });
           }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
           console.error("Error fetching messages:", error);
           handleUploadError({
             data: {
-              error: error?.response?.data?.error || "Failed to load messages"
-            }
+              error: error?.response?.data?.error || "Failed to load messages",
+            },
           });
         }
       }
@@ -475,46 +486,49 @@ export default function Chat() {
         )}
       </div>
       {/* //TODO: Some UI Fixes here :) */}
-      {file.fileName.length === 0 && (!messages || (messages && messages.length === 0)) && (
-        <div className="text-2xl h-[calc(100vh-14.25rem)] font-semibold mx-auto w-fit">
-          <WritingText
-            text="Let's Learn Something New"
-            className="relative top-1/2"
-          />
-        </div>
-      )
-      // : (
-      //   file.fileName.length !== 0 && (
-      //     <div className="flex w-fit flex-row gap-2 mb-4 border top-0 sticky items-center mx-auto">
-      //       <h1 className="text-zinc-400 font-semibold max-w-[28ch] whitespace-nowrap truncate overflow-hidden tracking-wide">
-      //         {file.fileName} uploaded
-      //       </h1>
-      //       <img src="../src/assets/file-check.svg" className="w-6" alt="file" />
-      //     </div>
-      //   )
-      // )
+      {
+        file.fileName.length === 0 &&
+          (!messages || (messages && messages.length === 0)) && (
+            <div className="text-2xl h-[calc(100vh-14.25rem)] font-semibold mx-auto w-fit">
+              <WritingText
+                text="Let's Learn Something New"
+                className="relative top-1/2"
+              />
+            </div>
+          )
+        // : (
+        //   file.fileName.length !== 0 && (
+        //     <div className="flex w-fit flex-row gap-2 mb-4 border top-0 sticky items-center mx-auto">
+        //       <h1 className="text-zinc-400 font-semibold max-w-[28ch] whitespace-nowrap truncate overflow-hidden tracking-wide">
+        //         {file.fileName} uploaded
+        //       </h1>
+        //       <img src="../src/assets/file-check.svg" className="w-6" alt="file" />
+        //     </div>
+        //   )
+        // )
       }
       <div className="flex flex-col gap-2 pb-20">
-        {messages && messages.map((message, index) => (
-          <div key={index} className="flex flex-row items-start gap-2">
-            {message.sender === "bot" && (
-              <img
-                src="../src/assets/bot.svg"
-                className="w-8 pt-2"
-                alt="Chatbot"
-              />
-            )}
-            <div
-              className={`${
-                message.sender === "user"
-                  ? "ml-auto text-zinc-400 max-w-96 border-2 sm:border-0 px-6 py-2 rounded-xl sm:bg-black bg-zinc-900 border-zinc-800 sm:max-w-[36rem] font-semibold"
-                  : "px-2 sm:px-4 sm:py-2 chat-block text-zinc-200 sm:bg-zinc-950 sm:border-2 border-zinc-800 overflow-x-auto rounded-xl w-full sm:w-[calc(100%-12rem)]"
-              }`}
-            >
-              <MDRender mdString={message.text} />
+        {messages &&
+          messages.map((message, index) => (
+            <div key={index} className="flex flex-row items-start gap-2">
+              {message.sender === "bot" && (
+                <img
+                  src="../src/assets/bot.svg"
+                  className="w-8 pt-2"
+                  alt="Chatbot"
+                />
+              )}
+              <div
+                className={`${
+                  message.sender === "user"
+                    ? "ml-auto text-zinc-400 max-w-96 border-2 sm:border-0 px-6 py-2 rounded-xl sm:bg-black bg-zinc-900 border-zinc-800 sm:max-w-[36rem] font-semibold"
+                    : "px-2 sm:px-4 sm:py-2 chat-block text-zinc-200 sm:bg-zinc-950 sm:border-2 border-zinc-800 overflow-x-auto rounded-xl w-full sm:w-[calc(100%-12rem)]"
+                }`}
+              >
+                <MDRender mdString={message.text} />
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
       <div
         className="flex flex-row gap-2 w-[calc(100%-2rem)] max-w-[55rem] 

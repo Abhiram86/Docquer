@@ -90,10 +90,12 @@ export default function ChatCard({
       )}
       <div
         onClick={onClick}
-        className={`p-4 relative hover:bg-zinc-900 z-0 transition-colors text-balance bg-zinc-900/50 backdrop-blur-sm overflow-clip border-[3px] h-32 w-[316.8px] border-zinc-700 rounded-lg ${isDeleting ? "pointer-events-none animate-bounce" : ""}`}
+        className={`p-4 relative hover:bg-zinc-900 z-0 transition-colors text-balance bg-zinc-900/50 backdrop-blur-sm overflow-clip border-[3px] h-32 w-[316.8px] border-zinc-700 rounded-lg ${
+          isDeleting ? "pointer-events-none animate-bounce" : ""
+        }`}
       >
         <img
-          src="../src/assets/dots.svg"
+          src="assets/dots.svg"
           className="absolute top-1 z-20 right-1 w-6 p-1 cursor-pointer"
           alt="more"
           onClick={(e) => {

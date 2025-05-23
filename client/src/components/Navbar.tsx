@@ -20,13 +20,13 @@ export default function Navbar() {
       <nav className="flex flex-row items-center">
         <div className="w-16">
           <img
-            src="../src/assets/logo/logo_b.png"
+            src="assets/logo/logo_b.png"
             className="md:block hidden cursor-pointer"
             alt="logo"
             onClick={() => router("/")}
           />
           <img
-            src="../src/assets/logo/logo_s.png"
+            src="assets/logo/logo_s.png"
             className="md:hidden cursor-pointer"
             alt="logo"
             onClick={() => router("/")}

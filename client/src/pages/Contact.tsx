@@ -81,13 +81,13 @@ export default function Contact() {
         <div className="flex flex-row gap-4">
           <img
             className="h-8 cursor-pointer invert"
-            src="../src/assets/github.svg"
+            src="assets/github.svg"
             alt="github"
             onClick={() => window.open("https://github.com/Abhiram86")}
           />
           <img
             className="h-8 cursor-pointer"
-            src="../src/assets/linkedin.svg"
+            src="assets/linkedin.svg"
             alt="linkedin"
             onClick={() =>
               window.open("https://www.linkedin.com/in/abhiram-alla-0684512ab/")
@@ -95,7 +95,7 @@ export default function Contact() {
           />
           <img
             className="h-8 cursor-pointer invert"
-            src="../src/assets/twitter.svg"
+            src="assets/twitter.svg"
             alt="X"
             onClick={() => window.open("https://x.com/alla_abhiram")}
           />

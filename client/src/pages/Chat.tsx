@@ -466,7 +466,7 @@ export default function Chat() {
             <h2 className="font-medium text-zinc-400 max-w-[28ch] whitespace-nowrap truncate overflow-hidden tracking-wide">
               {file.fileName} uploaded successfully
             </h2>
-            <img src="../src/assets/file-check.svg" alt="ok" />
+            <img src="assets/file-check.svg" alt="ok" />
             <div className="absolute -right-10">
               <input
                 type="file"
@@ -477,7 +477,7 @@ export default function Chat() {
                 onChange={handleReupload}
               />
               <img
-                src="../src/assets/replace.svg"
+                src="assets/replace.svg"
                 className="w-6 -translate-y-[1.9rem] pointer-events-none"
                 alt="re-upload"
               />
@@ -502,7 +502,7 @@ export default function Chat() {
         //       <h1 className="text-zinc-400 font-semibold max-w-[28ch] whitespace-nowrap truncate overflow-hidden tracking-wide">
         //         {file.fileName} uploaded
         //       </h1>
-        //       <img src="../src/assets/file-check.svg" className="w-6" alt="file" />
+        //       <img src="assets/file-check.svg" className="w-6" alt="file" />
         //     </div>
         //   )
         // )
@@ -512,11 +512,7 @@ export default function Chat() {
           messages.map((message, index) => (
             <div key={index} className="flex flex-row items-start gap-2">
               {message.sender === "bot" && (
-                <img
-                  src="../src/assets/bot.svg"
-                  className="w-8 pt-2"
-                  alt="Chatbot"
-                />
+                <img src="assets/bot.svg" className="w-8 pt-2" alt="Chatbot" />
               )}
               <div
                 className={`${
@@ -548,14 +544,14 @@ export default function Chat() {
                   onChange={handleFileUpload}
                 />
                 <img
-                  src="../src/assets/file-plus.svg"
+                  src="assets/file-plus.svg"
                   className="w-10 h-10 p-2 rounded-full pointer-events-none bg-zinc-800 cursor-pointer transition-all select-none"
                   tabIndex={0}
                   alt="file upload"
                 />
               </div>
               <img
-                src="../src/assets/link.svg"
+                src="assets/link.svg"
                 className="w-10 h-10 p-2 rounded-full bg-zinc-800 cursor-pointer
             hover:invert transition-all select-none"
                 tabIndex={0}
@@ -582,13 +578,13 @@ export default function Chat() {
         />
         {loading ? (
           <img
-            src="../src/assets/spinner.svg"
+            src="assets/spinner.svg"
             className="w-10 p-2 animate-spin"
             alt="loader"
           />
         ) : (
           <img
-            src="../src/assets/send.svg"
+            src="assets/send.svg"
             className="w-10 h-10 p-2 rounded-full bg-zinc-100 cursor-pointer
           hover:invert transition-all"
             tabIndex={0}

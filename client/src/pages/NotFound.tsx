@@ -8,7 +8,7 @@ export default function NotFound() {
       <div className="text-xl font-medium text-center text-balance">
         <img
           className="mx-auto w-80"
-          src="../src/assets/notfound.png"
+          src="assets/notfound.png"
           alt="not found"
         />
         <h1 className="text-zinc-300">

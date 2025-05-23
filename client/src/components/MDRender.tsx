@@ -68,7 +68,7 @@ export const MDRender = ({ mdString }: { mdString: string }) => {
                   aria-label="Copy code"
                 >
                   <img
-                    src="../src/assets/copy.svg"
+                    src="assets/copy.svg"
                     alt="Copy"
                     width={20}
                     height={20}

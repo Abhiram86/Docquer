@@ -14,13 +14,13 @@ export function Header({
   return (
     <header className="flex border-b border-zinc-400 sm:hidden justify-between p-2 z-50 top-0 sticky bg-black/50 backdrop-blur-md">
       <img
-        src="../src/assets/logo/logo_s.png"
+        src="assets/logo/logo_s.png"
         alt="logo"
         onClick={() => router("/")}
         className="w-16 cursor-pointer"
       />
       <img
-        src="../src/assets/panel.svg"
+        src="assets/panel.svg"
         alt="logo"
         onClick={() => setOpen(!open)}
         className="w-10 h-10 my-auto hover:bg-zinc-800 rounded-full p-[6px] cursor-pointer"

@@ -9,15 +9,15 @@ export default function Bento() {
           <div className="logos-container sm:mt-0 flex flex-row gap-2 justify-center items-center">
             <div className="logos flex flex-row w-fit mx-auto mt-2 items-center">
               <img
-                src="../src/assets/pdf.png"
+                src="assets/pdf.png"
                 className="h-16 aspect-auto"
                 alt="pdf"
               />
-              <img src="../src/assets/docx.png" className="h-14" alt="pdf" />
+              <img src="assets/docx.png" className="h-14" alt="pdf" />
             </div>
             <div className="logos flex flex-row items-center gap-2 sm:gap-3 fit mx-auto">
-              <img src="../src/assets/csv.svg" className="h-12" alt="pdf" />
-              <img src="../src/assets/ppt.png" className="h-14" alt="pdf" />
+              <img src="assets/csv.svg" className="h-12" alt="pdf" />
+              <img src="assets/ppt.png" className="h-14" alt="pdf" />
             </div>
           </div>
           <p className="p-4 sm:p-4 border-2 rounded-lg text-zinc-400 border-zinc-800 font-semibold text-center w-[12ch] sm:w-[26ch]">
@@ -29,21 +29,13 @@ export default function Bento() {
             <h1 className="text-2xl text-zinc-200 font-semibold">
               Upload with a single click
             </h1>
-            <img
-              className="rounded-lg"
-              src="../src/assets/im1.png"
-              alt="pic1"
-            />
+            <img className="rounded-lg" src="assets/im1.png" alt="pic1" />
           </div>
           <div className="rounded-2xl border-2 space-y-2 border-zinc-400/25 p-2 text-balance bg-zinc-900/50 backdrop-blur-sm">
             <h2 className="text-2xl text-zinc-200 font-semibold">
               Easily manage Conversations
             </h2>
-            <img
-              className="rounded-lg"
-              src="../src/assets/im2.png"
-              alt="pic2"
-            />
+            <img className="rounded-lg" src="assets/im2.png" alt="pic2" />
           </div>
         </div>
       </div>

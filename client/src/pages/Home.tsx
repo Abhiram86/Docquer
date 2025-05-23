@@ -27,7 +27,7 @@ export default function Home() {
           autoPlay
           muted
         >
-          <source src="../src/assets/video/motion.mp4" type="video/mp4" />
+          <source src="assets/video/motion.mp4" type="video/mp4" />
         </video>
         <Bento />
       </div>

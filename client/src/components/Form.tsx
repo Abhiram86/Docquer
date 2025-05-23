@@ -27,7 +27,7 @@ export function Form({
       } border-2 w-fit p-4 gap-4 transition-all select-none border-zinc-700 rounded-lg ${className}`}
     >
       <img
-        src="../src/assets/earth.jpg"
+        src="assets/earth.jpg"
         alt="earth"
         className="auth-img object-cover w-64 rounded-xl"
       />

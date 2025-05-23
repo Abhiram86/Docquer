@@ -1,0 +1,138 @@
+# Environment variables
+**/.env
+**/.env.local
+**/.env.development
+**/.env.production
+**/.env.staging
+**/.env.test
+**/.env.*
+
+# Client (Vite React) specific
+client/node_modules/
+client/dist/
+client/build/
+client/.vite/
+client/coverage/
+client/.nyc_output/
+client/.cache/
+client/.parcel-cache/
+client/.eslintcache
+client/.stylelintcache
+client/.vscode/
+client/.idea/
+
+# Client logs
+client/npm-debug.log*
+client/yarn-debug.log*
+client/yarn-error.log*
+client/pnpm-debug.log*
+client/lerna-debug.log*
+
+# Server (FastAPI Python) specific
+server/__pycache__/
+server/*.py[cod]
+server/*$py.class
+server/*.so
+server/.Python
+server/build/
+server/develop-eggs/
+server/dist/
+server/downloads/
+server/eggs/
+server/.eggs/
+server/lib/
+server/lib64/
+server/parts/
+server/sdist/
+server/var/
+server/wheels/
+server/share/python-wheels/
+server/*.egg-info/
+server/.installed.cfg
+server/*.egg
+server/MANIFEST
+
+# Server virtual environments
+server/venv/
+server/env/
+server/ENV/
+server/env.bak/
+server/venv.bak/
+server/.venv/
+
+# Server testing and coverage
+server/.coverage
+server/.pytest_cache/
+server/.tox/
+server/.nox/
+server/coverage.xml
+server/*.cover
+server/*.py,cover
+server/.hypothesis/
+
+# Server Jupyter Notebook
+server/.ipynb_checkpoints
+
+# Server IPython
+server/profile_default/
+server/ipython_config.py
+
+# Server database
+server/*.db
+server/*.sqlite3
+server/*.sqlite
+
+# Server logs
+server/*.log
+server/logs/
+
+# FastAPI specific
+server/alembic.ini
+server/alembic/
+
+# Operating System
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+.temp/
+.tmp/
+
+# Dependency directories
+**/node_modules/
+
+# Package manager files
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+
+# Build outputs
+**/dist/
+**/build/
+
+# Runtime data
+**/pids
+**/*.pid
+**/*.seed
+**/*.pid.lock
+
+# Coverage directory used by tools like istanbul
+**/coverage/
+
+# Ignore all .env files recursively
+.env*
